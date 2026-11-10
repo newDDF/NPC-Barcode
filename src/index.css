@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  min-width: 320px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  @apply bg-slate-100 text-slate-900 transition-colors duration-300;
+}
+
+html.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+::selection {
+  background: rgba(194, 182, 56, 0.3);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border-radius: 999px;
+}
+
+
+.barcode-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.barcode-color-input::-webkit-color-swatch {
+  border: 0;
+  border-radius: 0.5rem;
+}
+
+.barcode-color-input::-moz-color-swatch {
+  border: 0;
+  border-radius: 0.5rem;
+}
+
+
+/* Header brand treatment */
+.brand-wordmark {
+  color: #ffdd00;
+}
+
+/* Compact color controls matching the original outlined swatches */
+.barcode-color-input {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0;
+}
+
+.barcode-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.barcode-color-input::-webkit-color-swatch {
+  border: 1px solid #475569;
+  border-radius: 8px;
+}
+
+.barcode-color-input::-moz-color-swatch {
+  border: 1px solid #475569;
+  border-radius: 8px;
+}
