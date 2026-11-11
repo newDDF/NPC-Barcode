@@ -6,9 +6,6 @@ const BASE_URL = 'https://api.npc-barcode.com/v1/generate';
 const inputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-700 outline-none transition-all duration-150 focus:border-brand focus:bg-white focus:font-semibold focus:text-slate-950 focus:ring-2 focus:ring-brand/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:focus:bg-slate-950 dark:focus:text-white';
 
-const endpointClass =
-  'text-[#927400] dark:text-[#f3d76b]';
-
 const labelClass =
   'mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400';
 

@@ -1,5 +1,7 @@
+import { normalizeRetailBarcode } from '../shared/checkDigits';
 import { useRef, useState } from 'react';
 import bwipjs from 'bwip-js/browser';
+import { ErrorCorrectionLevel, QRCode } from '@rabbit-company/qrcode';
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -15,6 +17,47 @@ const labelClass =
 
 const inputClass =
   'w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand dark:border-slate-700 dark:bg-slate-950 dark:text-white';
+
+function imageToPngDataUrl(image: HTMLImageElement): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas is unavailable.');
+
+  context.drawImage(image, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+async function imageDataUrlToBlob(
+  dataUrl: string,
+  mimeType: string,
+): Promise<Blob> {
+  const image = new Image();
+
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error('Unable to render image.'));
+    image.src = dataUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas is unavailable.');
+
+  context.drawImage(image, 0, 0);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, mimeType);
+  });
+
+  if (!blob) throw new Error('Unable to create image data.');
+  return blob;
+}
 
 function displayValue(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -172,42 +215,64 @@ export default function BatchProcessor() {
           skipped += 1;
         } else {
           try {
-            const canvas = document.createElement('canvas');
-
-            const options: bwipjs.RenderOptions & { eclevel?: string } = {
-              bcid: barcodeType,
-              text: value,
-              scale,
-              height: isSquare ? scale : height / 10,
-              padding,
-              barcolor: foreground.replace('#', ''),
-              backgroundcolor: background.replace('#', ''),
-              includetext: showText,
-            };
+            const normalizedValue = normalizeRetailBarcode(barcodeType, value);
+            let blob: Blob;
 
             if (isQr) {
-              options.eclevel = errorLevel;
-            }
+              const qr = QRCode.encode(normalizedValue, {
+                errorCorrectionLevel: logoImage
+                  ? ErrorCorrectionLevel.HIGH
+                  : ({
+                      L: ErrorCorrectionLevel.LOW,
+                      M: ErrorCorrectionLevel.MEDIUM,
+                      Q: ErrorCorrectionLevel.QUARTILE,
+                      H: ErrorCorrectionLevel.HIGH,
+                    }[errorLevel as 'L' | 'M' | 'Q' | 'H'] ?? ErrorCorrectionLevel.MEDIUM),
+                boostEcc: true,
+              });
 
-            bwipjs.toCanvas(canvas, options);
+              const logo = logoImage
+                ? {
+                    content: imageToPngDataUrl(logoImage),
+                    size: Math.max(1, Math.floor(qr.size * Math.min(logoSize, 20) / 100)),
+                    padding: 1,
+                    background,
+                  }
+                : undefined;
 
-            if (isQr && logoImage) {
-              const context = canvas.getContext('2d');
+              const svgOptions = {
+                scale: Math.max(1, scale),
+                margin: Math.max(4, Math.round(padding / 2)),
+                dark: foreground,
+                light: background,
+                title: 'QR Code',
+                logo,
+              };
 
-              if (!context) {
-                throw new Error('Could not access the barcode canvas.');
+              blob = await imageDataUrlToBlob(
+                qr.toDataURL(svgOptions),
+                'image/png',
+              );
+            } else {
+              const canvas = document.createElement('canvas');
+
+              const options: bwipjs.RenderOptions = {
+                bcid: barcodeType,
+                text: normalizedValue,
+                scale,
+                padding,
+                barcolor: foreground.replace('#', ''),
+                backgroundcolor: background.replace('#', ''),
+                includetext: showText,
+              };
+
+              if (!isSquare) {
+                options.height = height / 10;
               }
 
-              const size = Math.min(canvas.width, canvas.height) * (logoSize / 100);
-              const x = (canvas.width - size) / 2;
-              const y = (canvas.height - size) / 2;
-
-              context.fillStyle = background;
-              context.fillRect(x, y, size, size);
-              context.drawImage(logoImage, x, y, size, size);
+              bwipjs.toCanvas(canvas, options);
+              blob = await createPngBlob(canvas);
             }
-
-            const blob = await createPngBlob(canvas);
 
             const baseName = namingMode === 'index'
               ? `barcode_${index + 1}`

@@ -37,8 +37,8 @@ function App() {
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-3">
-            <a href="/" className="flex shrink-0 items-center gap-3">
+          <div className="flex h-16 min-w-0 items-center justify-between gap-2 sm:gap-3">
+            <a href="/" className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
               <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" className="h-full w-full" aria-hidden="true">
                   <rect fill="#ffdd00" x="-.26" y="-.73" width="120" height="120" rx="30.16" ry="30.16" />
@@ -54,14 +54,14 @@ function App() {
                   </g>
                 </svg>
               </div>
-              <span className="brand-wordmark text-xl font-bold tracking-tight">
+              <span className="brand-wordmark hidden whitespace-nowrap text-xl font-bold tracking-tight sm:inline">
                 NPC-Barcode
               </span>
             </a>
 
-            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2 sm:gap-3">
               <nav
-                className="flex min-w-0 items-center gap-0.5 overflow-x-auto rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-950/80 sm:gap-1"
+                className="flex shrink-0 items-center gap-0.5 rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-800 dark:bg-slate-950/80 sm:gap-1"
                 aria-label="Main navigation"
               >
                 {navigation.map((item) => {
@@ -73,14 +73,14 @@ function App() {
                       type="button"
                       onClick={() => setActiveView(item.id)}
                       aria-current={isActive ? 'page' : undefined}
-                      className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all duration-200 sm:px-4 sm:text-sm ${
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-semibold transition-all duration-200 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2 sm:text-sm lg:px-4 ${
                         isActive
                           ? 'bg-brand text-slate-950 shadow'
                           : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                       }`}
                     >
                       <i className={`fa-solid ${item.icon}`} aria-hidden="true" />
-                      <span>{item.label}</span>
+                      <span className="hidden lg:inline whitespace-nowrap">{item.label}</span>
                     </button>
                   );
                 })}

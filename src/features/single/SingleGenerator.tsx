@@ -1,5 +1,7 @@
+import { normalizeRetailBarcode } from '../shared/checkDigits';
 import { useEffect, useRef, useState } from 'react';
 import bwipjs from 'bwip-js/browser';
+import { ErrorCorrectionLevel, QRCode } from '@rabbit-company/qrcode';
 import { saveAs } from 'file-saver';
 import { useBarcodeConfig } from '../shared/BarcodeConfigContext';
 
@@ -73,6 +75,47 @@ const inputClass =
 const labelClass =
   'mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400';
 
+async function imageDataUrlToBlob(
+  dataUrl: string,
+  mimeType: string,
+): Promise<Blob> {
+  const image = new Image();
+
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error('Unable to render image.'));
+    image.src = dataUrl;
+  });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas is unavailable.');
+
+  context.drawImage(image, 0, 0);
+
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, mimeType);
+  });
+
+  if (!blob) throw new Error('Unable to create image data.');
+  return blob;
+}
+
+function imageToPngDataUrl(image: HTMLImageElement): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas is unavailable.');
+
+  context.drawImage(image, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
 function readSavedPresets(): Record<string, BarcodePreset> {
   try {
     const saved = localStorage.getItem('npc_barcode_templates');
@@ -108,58 +151,106 @@ export default function SingleGenerator() {
   const [dimensions, setDimensions] = useState('0 × 0 px');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [qrSvg, setQrSvg] = useState('');
+  const [qrDataUrl, setQrDataUrl] = useState('');
 
   const isQr = barcodeType === 'qrcode';
   const isSquare = ['qrcode', 'datamatrix', 'azteccode'].includes(barcodeType);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!isQr && !canvas) return;
 
     if (!payload.trim()) {
-      canvas.width = 0;
-      canvas.height = 0;
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+      setQrSvg('');
+      setQrDataUrl('');
       setDimensions('0 × 0 px');
       setError('');
       return;
     }
 
     try {
-      const options: bwipjs.RenderOptions & { eclevel?: string } = {
-        bcid: barcodeType,
-        text: payload,
-        scale,
-        height: isSquare ? scale : height / 10,
-        padding,
-        barcolor: foreground.replace('#', ''),
-        backgroundcolor: background.replace('#', ''),
-        includetext: showText,
-        textxalign: 'center',
-      };
+      const normalizedPayload = normalizeRetailBarcode(barcodeType, payload);
 
       if (isQr) {
-        options.eclevel = errorLevel;
-      }
-
-      bwipjs.toCanvas(canvas, options);
-
-      if (isQr && logoImage) {
-        const context = canvas.getContext('2d');
-
-        if (context) {
-          const size = Math.min(canvas.width, canvas.height) * (logoSize / 100);
-          const x = (canvas.width - size) / 2;
-          const y = (canvas.height - size) / 2;
-
-          context.fillStyle = background;
-          context.fillRect(x - 4, y - 4, size + 8, size + 8);
-          context.drawImage(logoImage, x, y, size, size);
+        if (canvas) {
+          canvas.width = 0;
+          canvas.height = 0;
         }
+
+        const qr = QRCode.encode(normalizedPayload, {
+          errorCorrectionLevel: logoImage
+            ? ErrorCorrectionLevel.HIGH
+            : ({
+                L: ErrorCorrectionLevel.LOW,
+                M: ErrorCorrectionLevel.MEDIUM,
+                Q: ErrorCorrectionLevel.QUARTILE,
+                H: ErrorCorrectionLevel.HIGH,
+              }[errorLevel as 'L' | 'M' | 'Q' | 'H'] ?? ErrorCorrectionLevel.MEDIUM),
+          boostEcc: true,
+        });
+
+        const logo = logoImage
+          ? {
+              content: imageToPngDataUrl(logoImage),
+              size: Math.max(1, Math.floor(qr.size * Math.min(logoSize, 20) / 100)),
+              padding: 1,
+              background,
+            }
+          : undefined;
+
+        const svgOptions = {
+          scale: Math.max(1, scale),
+          margin: Math.max(4, Math.round(padding / 2)),
+          dark: foreground,
+          light: background,
+          title: 'QR Code',
+          logo,
+        };
+
+        const svg = qr.toSVG(svgOptions);
+        const dataUrl = qr.toDataURL(svgOptions);
+
+        setQrSvg(svg);
+        setQrDataUrl(dataUrl);
+        setDimensions(
+          `${(qr.size + svgOptions.margin * 2) * svgOptions.scale} × ${(qr.size + svgOptions.margin * 2) * svgOptions.scale} px`,
+        );
+      } else {
+        if (!canvas) throw new Error('Barcode preview is unavailable.');
+
+        setQrSvg('');
+        setQrDataUrl('');
+
+        const options: bwipjs.RenderOptions = {
+          bcid: barcodeType,
+          text: normalizedPayload,
+          scale,
+          padding,
+          barcolor: foreground.replace('#', ''),
+          backgroundcolor: background.replace('#', ''),
+          includetext: showText,
+          textxalign: 'center',
+        };
+
+        if (!isSquare) options.height = height / 10;
+
+        bwipjs.toCanvas(canvas, options);
+        setDimensions(`${canvas.width} × ${canvas.height} px`);
       }
 
-      setDimensions(`${canvas.width} × ${canvas.height} px`);
       setError('');
     } catch (renderError) {
+      if (canvas) {
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+      setQrSvg('');
+      setQrDataUrl('');
       setDimensions('Invalid barcode');
       setError(
         renderError instanceof Error
@@ -230,31 +321,45 @@ export default function SingleGenerator() {
     notify('Logo overlay removed.');
   }
 
-  function downloadPng() {
-    const canvas = canvasRef.current;
-    if (!canvas || !canvas.width || error) {
+  async function downloadPng() {
+    if (error || (isQr ? !qrDataUrl : !canvasRef.current?.width)) {
       notify('Please generate a valid barcode first.');
       return;
     }
 
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        notify('Unable to export this barcode.');
-        return;
-      }
+    try {
+      const blob = isQr
+        ? await imageDataUrlToBlob(qrDataUrl, 'image/png')
+        : await new Promise<Blob>((resolve, reject) => {
+            canvasRef.current!.toBlob((result) => {
+              if (result) resolve(result);
+              else reject(new Error('Unable to export this barcode.'));
+            }, 'image/png');
+          });
 
       saveAs(blob, `NPC_${barcodeType}_${safeFileName()}.png`);
       notify('PNG downloaded successfully.');
-    });
+    } catch {
+      notify('Unable to export this barcode.');
+    }
   }
 
   function downloadSvg() {
-    const canvas = canvasRef.current;
-    if (!canvas || !canvas.width || error) {
+    if (error || (isQr ? !qrSvg : !canvasRef.current?.width)) {
       notify('Please generate a valid barcode first.');
       return;
     }
 
+    if (isQr) {
+      saveAs(
+        new Blob([qrSvg], { type: 'image/svg+xml;charset=utf-8' }),
+        `NPC_${barcodeType}_${safeFileName()}.svg`,
+      );
+      notify('SVG downloaded successfully.');
+      return;
+    }
+
+    const canvas = canvasRef.current!;
     const dataUrl = canvas.toDataURL('image/png');
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}"><image width="${canvas.width}" height="${canvas.height}" xlink:href="${dataUrl}"/></svg>`;
 
@@ -272,9 +377,7 @@ export default function SingleGenerator() {
   }
 
   async function copyImage() {
-    const canvas = canvasRef.current;
-
-    if (!canvas || !canvas.width || error) {
+    if (error || (isQr ? !qrDataUrl : !canvasRef.current?.width)) {
       notify('Please generate a valid barcode first.');
       return;
     }
@@ -285,9 +388,14 @@ export default function SingleGenerator() {
     }
 
     try {
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve));
-
-      if (!blob) throw new Error('Unable to create image.');
+      const blob = isQr
+        ? await imageDataUrlToBlob(qrDataUrl, 'image/png')
+        : await new Promise<Blob>((resolve, reject) => {
+            canvasRef.current!.toBlob((result) => {
+              if (result) resolve(result);
+              else reject(new Error('Unable to create image.'));
+            }, 'image/png');
+          });
 
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob }),
@@ -560,11 +668,10 @@ export default function SingleGenerator() {
                   type="checkbox"
                   checked={showText}
                   onChange={(event) => setShowText(event.target.checked)}
+                  aria-label="Show Human Readable Text"
                   className="peer sr-only"
                 />
-                <span className="relative h-6 w-11 rounded-full bg-slate-300 transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand peer-checked:bg-brand dark:bg-slate-800">
-                  <span className="absolute left-[2px] top-[2px] h-5 w-5 rounded-full border border-slate-300 bg-white transition-transform peer-checked:translate-x-5 peer-checked:border-white" />
-                </span>
+                <span className="relative h-6 w-11 rounded-full bg-slate-300 transition-colors before:absolute before:left-[2px] before:top-[2px] before:h-5 before:w-5 before:rounded-full before:border before:border-slate-300 before:bg-white before:transition-transform before:content-[''] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand peer-checked:bg-brand peer-checked:before:translate-x-5 peer-checked:before:border-white dark:bg-slate-800" />
               </label>
             </div>
           </div>
@@ -593,8 +700,8 @@ export default function SingleGenerator() {
                   <input
                     type="range"
                     min="10"
-                    max="28"
-                    value={logoSize}
+                    max="20"
+                    value={Math.min(logoSize, 20)}
                     onChange={(event) => setLogoSize(Number(event.target.value))}
                     className="w-full accent-brand"
                   />
@@ -615,15 +722,24 @@ export default function SingleGenerator() {
           </div>
 
           <div className="flex min-h-[300px] items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-100 p-5 dark:border-slate-800 dark:bg-slate-950 sm:p-8">
-            {error || !payload.trim() ? (
-              <p className="text-center text-xs text-slate-400">
-                {error ? 'Unable to render this barcode.' : 'Enter content to preview rendering.'}
-              </p>
+            {isQr && qrDataUrl && !error && payload.trim() ? (
+              <img
+                src={qrDataUrl}
+                alt="Generated QR code"
+                className="h-auto max-h-[350px] max-w-full rounded-sm object-contain shadow-md"
+              />
             ) : (
               <canvas
                 ref={canvasRef}
-                className="h-auto max-h-[350px] max-w-full rounded-sm object-contain shadow-md"
+                className={`h-auto max-h-[350px] max-w-full rounded-sm object-contain shadow-md ${
+                  isQr || error || !payload.trim() ? 'hidden' : ''
+                }`}
               />
+            )}
+            {(error || !payload.trim()) && (
+              <p className="text-center text-xs text-slate-400">
+                {error ? 'Unable to render this barcode.' : 'Enter content to preview rendering.'}
+              </p>
             )}
           </div>
 
