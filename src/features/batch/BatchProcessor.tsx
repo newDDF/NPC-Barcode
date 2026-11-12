@@ -104,6 +104,8 @@ export default function BatchProcessor() {
     padding,
     errorLevel,
     showText,
+    textColor,
+    applyTextToBatchApi,
     logoImage,
     logoSize,
   } = useBarcodeConfig();
@@ -220,15 +222,13 @@ export default function BatchProcessor() {
 
             if (isQr) {
               const qr = QRCode.encode(normalizedValue, {
-                errorCorrectionLevel: logoImage
-                  ? ErrorCorrectionLevel.HIGH
-                  : ({
-                      L: ErrorCorrectionLevel.LOW,
-                      M: ErrorCorrectionLevel.MEDIUM,
-                      Q: ErrorCorrectionLevel.QUARTILE,
-                      H: ErrorCorrectionLevel.HIGH,
-                    }[errorLevel as 'L' | 'M' | 'Q' | 'H'] ?? ErrorCorrectionLevel.MEDIUM),
-                boostEcc: true,
+                errorCorrectionLevel: {
+                  L: ErrorCorrectionLevel.LOW,
+                  M: ErrorCorrectionLevel.MEDIUM,
+                  Q: ErrorCorrectionLevel.QUARTILE,
+                  H: ErrorCorrectionLevel.HIGH,
+                }[errorLevel as 'L' | 'M' | 'Q' | 'H'] ?? ErrorCorrectionLevel.MEDIUM,
+                boostEcc: false,
               });
 
               const logo = logoImage
@@ -263,7 +263,8 @@ export default function BatchProcessor() {
                 padding,
                 barcolor: foreground.replace('#', ''),
                 backgroundcolor: background.replace('#', ''),
-                includetext: showText,
+                textcolor: (textColor ?? foreground).replace('#', ''),
+                includetext: applyTextToBatchApi && showText,
               };
 
               if (!isSquare) {

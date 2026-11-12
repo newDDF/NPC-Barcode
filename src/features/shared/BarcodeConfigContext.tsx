@@ -14,6 +14,8 @@ export type BarcodeConfig = {
   setPayload: Dispatch<SetStateAction<string>>;
   foreground: string;
   setForeground: Dispatch<SetStateAction<string>>;
+  textColor: string | null;
+  setTextColor: Dispatch<SetStateAction<string | null>>;
   background: string;
   setBackground: Dispatch<SetStateAction<string>>;
   scale: number;
@@ -26,6 +28,8 @@ export type BarcodeConfig = {
   setErrorLevel: Dispatch<SetStateAction<string>>;
   showText: boolean;
   setShowText: Dispatch<SetStateAction<boolean>>;
+  applyTextToBatchApi: boolean;
+  setApplyTextToBatchApi: Dispatch<SetStateAction<boolean>>;
   logoSize: number;
   setLogoSize: Dispatch<SetStateAction<number>>;
   logoImage: HTMLImageElement | null;
@@ -38,12 +42,14 @@ export function BarcodeConfigProvider({ children }: { children: ReactNode }) {
   const [barcodeType, setBarcodeType] = useState('qrcode');
   const [payload, setPayload] = useState('https://npc-barcode.com');
   const [foreground, setForeground] = useState('#000000');
+  const [textColor, setTextColor] = useState<string | null>(null);
   const [background, setBackground] = useState('#ffffff');
   const [scale, setScale] = useState(4);
   const [height, setHeight] = useState(50);
   const [padding, setPadding] = useState(10);
   const [errorLevel, setErrorLevel] = useState('M');
   const [showText, setShowText] = useState(true);
+  const [applyTextToBatchApi, setApplyTextToBatchApi] = useState(false);
   const [logoSize, setLogoSize] = useState(20);
   const [logoImage, setLogoImage] = useState<HTMLImageElement | null>(null);
 
@@ -51,9 +57,10 @@ export function BarcodeConfigProvider({ children }: { children: ReactNode }) {
     <BarcodeConfigContext.Provider
       value={{
         barcodeType, setBarcodeType, payload, setPayload,
-        foreground, setForeground, background, setBackground,
+        foreground, setForeground, textColor, setTextColor, background, setBackground,
         scale, setScale, height, setHeight, padding, setPadding,
         errorLevel, setErrorLevel, showText, setShowText,
+        applyTextToBatchApi, setApplyTextToBatchApi,
         logoSize, setLogoSize, logoImage, setLogoImage,
       }}
     >

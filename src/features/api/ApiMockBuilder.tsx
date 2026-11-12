@@ -48,6 +48,8 @@ export default function ApiMockBuilder() {
     height,
     errorLevel,
     showText,
+    textColor,
+    applyTextToBatchApi,
   } = useBarcodeConfig();
 
   const [apiPayload, setApiPayload] = useState(payload);
@@ -65,7 +67,8 @@ export default function ApiMockBuilder() {
     fg: foreground,
     bg: background,
     ec: errorLevel,
-    text: showText ? '1' : '0',
+    text: applyTextToBatchApi && showText ? '1' : '0',
+    textcolor: textColor ?? foreground,
   });
 
   const endpoint = `${BASE_URL}?${params.toString()}`;
@@ -196,7 +199,7 @@ export default function ApiMockBuilder() {
                   <div>
                     <label className={labelClass}>Text</label>
                     <p className="font-mono text-sm text-slate-700 dark:text-slate-300">
-                      {showText ? 'Enabled' : 'Disabled'}
+                      {applyTextToBatchApi && showText ? 'Enabled' : 'Disabled'}
                     </p>
                   </div>
                 </div>
@@ -210,52 +213,51 @@ export default function ApiMockBuilder() {
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                   Generated GET Endpoint
                 </h3>
-                <span className="rounded-lg bg-brand/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-brand">
-                  Live Preview
-                </span>
+                <button
+                  type="button"
+                  onClick={() => void handleCopy(endpoint, 'URL')}
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#ffdd00] px-4 py-2 text-xs font-bold text-[#493900] shadow-sm transition hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-[#e7ca55]/40"
+                >
+                  <i className="fa-solid fa-copy" aria-hidden="true" />
+                  Copy URL
+                </button>
               </div>
 
               <textarea
                 aria-label="Generated GET endpoint"
                 rows={5}
-                className="w-full resize-y rounded-xl border border-[#1e293b] bg-[#0f172a] p-3 font-mono text-sm leading-6 text-[#34d399] outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25 selection:bg-brand/30"
+                className="w-full resize-y rounded-xl border border-emerald-200 bg-emerald-50 p-3 font-mono text-sm leading-6 text-emerald-700 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25 selection:bg-brand/30 dark:border-[#1e293b] dark:bg-[#0f172a] dark:text-[#34d399]"
                 value={endpoint}
                 readOnly
                 onFocus={(event) => event.currentTarget.select()}
               />
 
-              <button
-                type="button"
-                onClick={() => void handleCopy(endpoint, 'URL')}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#ffdd00] px-4 py-2.5 text-sm font-bold text-[#493900] shadow-sm transition hover:brightness-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#e7ca55]/40"
-              >
-                <i className="fa-solid fa-copy" aria-hidden="true" />
-                Copy URL
-              </button>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/50">
-              <h3 className="mb-4 text-sm font-bold text-slate-900 dark:text-white">
-                HTML Image Tag
-              </h3>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  HTML Image Tag
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => void handleCopy(imageTag, 'HTML')}
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-[#ffdd00] px-4 py-2 text-xs font-bold text-[#493900] shadow-sm transition hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-[#e7ca55]/40"
+                >
+                  <i className="fa-solid fa-copy" aria-hidden="true" />
+                  Copy HTML
+                </button>
+              </div>
 
               <textarea
                 aria-label="Generated HTML image tag"
                 rows={4}
-                className="w-full resize-y rounded-xl border border-[#1e293b] bg-[#0f172a] p-3 font-mono text-sm leading-6 text-[#34d399] outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25 selection:bg-brand/30"
+                className="w-full resize-y rounded-xl border border-emerald-200 bg-emerald-50 p-3 font-mono text-sm leading-6 text-emerald-700 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25 selection:bg-brand/30 dark:border-[#1e293b] dark:bg-[#0f172a] dark:text-[#34d399]"
                 value={imageTag}
                 readOnly
                 onFocus={(event) => event.currentTarget.select()}
               />
 
-              <button
-                type="button"
-                onClick={() => void handleCopy(imageTag, 'HTML')}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#ffdd00] px-4 py-2.5 text-sm font-bold text-[#493900] shadow-sm transition hover:brightness-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#e7ca55]/40"
-              >
-                <i className="fa-solid fa-copy" aria-hidden="true" />
-                Copy HTML
-              </button>
             </div>
 
             {notice && (

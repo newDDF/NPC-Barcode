@@ -3,6 +3,8 @@ import SingleGenerator from './features/single/SingleGenerator';
 import ApiMockBuilder from './features/api/ApiMockBuilder';
 import BatchProcessor from './features/batch/BatchProcessor';
 import { BarcodeConfigProvider } from './features/shared/BarcodeConfigContext';
+import LegalModal, { type LegalDocument } from './components/LegalModal';
+import SeoContent from './components/SeoContent';
 
 type View = 'single' | 'batch' | 'api';
 type Theme = 'dark' | 'light';
@@ -14,7 +16,13 @@ const navigation: { id: View; label: string; icon: string }[] = [
 ];
 
 function App() {
-  const [activeView, setActiveView] = useState<View>('single');
+  const [activeView, setActiveView] = useState<View>(() => {
+    const path = window.location.pathname.replace(/\/+$/, '');
+    if (path === '/barcode-api') return 'api';
+    if (path === '/batch-barcode-generator') return 'batch';
+    return 'single';
+  });
+  const [legalDocument, setLegalDocument] = useState<LegalDocument | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     try {
       return localStorage.getItem('npc_theme') === 'light' ? 'light' : 'dark';
@@ -105,28 +113,42 @@ function App() {
       </header>
 
       <BarcodeConfigProvider>
-      <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-8 sm:px-6 lg:px-8">
-        {activeView === 'single' && <SingleGenerator />}
+        <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-8 sm:px-6 lg:px-8">
+          {activeView === 'single' && <SingleGenerator />}
 
-        {activeView === 'batch' && <BatchProcessor />}
+          {activeView === 'batch' && <BatchProcessor />}
 
-        {activeView === 'api' && <ApiMockBuilder />}
-      </main>
+          {activeView === 'api' && <ApiMockBuilder />}
+        </main>
       </BarcodeConfigProvider>
 
-      <footer className="mt-12 border-t border-slate-200 bg-white/80 py-6 text-center text-xs text-slate-500 transition-colors dark:border-slate-800 dark:bg-slate-950/80">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-700 dark:text-slate-400">NPC-Barcode</span>
-            <span>© 2026 NPC Toolkits. All rights reserved.</span>
+      <SeoContent />
+
+      <footer className="mt-12 border-t border-slate-200 bg-white/80 py-5 text-xs text-slate-500 transition-colors dark:border-slate-800 dark:bg-slate-950/80">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 whitespace-nowrap px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="shrink-0 font-bold text-slate-700 dark:text-slate-300">NPC-Barcode</span>
+            <span className="truncate">© 2026 NPC Toolkits.</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span>Client-Side Local Computation</span>
-            <span>•</span>
-            <span>SVG / Canvas Rendering Engine</span>
-          </div>
+          <nav aria-label="Legal and project links" className="flex shrink-0 items-center gap-3 sm:gap-5">
+            <button type="button" onClick={() => setLegalDocument('privacy')} className="inline-flex items-center gap-1.5 transition hover:text-slate-900 dark:hover:text-white">
+              <i className="fa-solid fa-shield-halved" aria-hidden="true" />
+              <span>Privacy Policy</span>
+            </button>
+            <button type="button" onClick={() => setLegalDocument('terms')} className="inline-flex items-center gap-1.5 transition hover:text-slate-900 dark:hover:text-white">
+              <i className="fa-solid fa-file-contract" aria-hidden="true" />
+              <span>Terms of Use</span>
+            </button>
+            <a href="https://github.com/newDDF/npc-barcode" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 transition hover:text-slate-900 dark:hover:text-white">
+              <i className="fa-brands fa-github" aria-hidden="true" />
+              <span>GitHub</span>
+            </a>
+          </nav>
         </div>
       </footer>
+      {legalDocument && (
+        <LegalModal document={legalDocument} onClose={() => setLegalDocument(null)} />
+      )}
     </div>
   );
 }

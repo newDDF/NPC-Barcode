@@ -140,9 +140,10 @@ export default function SingleGenerator() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const {
     barcodeType, setBarcodeType, payload, setPayload,
-    foreground, setForeground, background, setBackground,
+    foreground, setForeground, textColor, setTextColor, background, setBackground,
     scale, setScale, height, setHeight, padding, setPadding,
     errorLevel, setErrorLevel, showText, setShowText,
+    applyTextToBatchApi, setApplyTextToBatchApi,
     logoSize, setLogoSize, logoImage, setLogoImage,
   } = useBarcodeConfig();
   const [page, setPage] = useState(0);
@@ -183,15 +184,13 @@ export default function SingleGenerator() {
         }
 
         const qr = QRCode.encode(normalizedPayload, {
-          errorCorrectionLevel: logoImage
-            ? ErrorCorrectionLevel.HIGH
-            : ({
-                L: ErrorCorrectionLevel.LOW,
-                M: ErrorCorrectionLevel.MEDIUM,
-                Q: ErrorCorrectionLevel.QUARTILE,
-                H: ErrorCorrectionLevel.HIGH,
-              }[errorLevel as 'L' | 'M' | 'Q' | 'H'] ?? ErrorCorrectionLevel.MEDIUM),
-          boostEcc: true,
+          errorCorrectionLevel: {
+            L: ErrorCorrectionLevel.LOW,
+            M: ErrorCorrectionLevel.MEDIUM,
+            Q: ErrorCorrectionLevel.QUARTILE,
+            H: ErrorCorrectionLevel.HIGH,
+          }[errorLevel as 'L' | 'M' | 'Q' | 'H'] ?? ErrorCorrectionLevel.MEDIUM,
+          boostEcc: false,
         });
 
         const logo = logoImage
@@ -232,6 +231,7 @@ export default function SingleGenerator() {
           scale,
           padding,
           barcolor: foreground.replace('#', ''),
+          textcolor: (textColor ?? foreground).replace('#', ''),
           backgroundcolor: background.replace('#', ''),
           includetext: showText,
           textxalign: 'center',
@@ -262,6 +262,7 @@ export default function SingleGenerator() {
     barcodeType,
     payload,
     foreground,
+    textColor,
     background,
     scale,
     height,
@@ -494,7 +495,7 @@ export default function SingleGenerator() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setPage((current) => (current + 1) % 2 === 0 ? 1 : 0)}
+                  onClick={() => setPage((current) => (current - 1 + 2) % 2)}
                   className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-700 transition hover:border-brand hover:text-brand dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
                   aria-label="Previous symbology page"
                 >
@@ -533,6 +534,7 @@ export default function SingleGenerator() {
                 </button>
               ))}
             </div>
+
           </div>
 
           <div>
@@ -607,6 +609,44 @@ export default function SingleGenerator() {
               </div>
             </div>
 
+            {!isSquare && (
+              <div>
+                <label className={labelClass}>Human Readable Text</label>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-950">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <input
+                      type="color"
+                      value={textColor ?? foreground}
+                      onChange={(event) => setTextColor(event.target.value)}
+                      className="barcode-color-input h-8 w-8 shrink-0 cursor-pointer"
+                      aria-label="Human readable text font color"
+                    />
+                    <span className="font-mono text-xs text-slate-700 dark:text-slate-300">Font Color</span>
+                  </div>
+                  <label className="flex shrink-0 cursor-pointer items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-300">Show Text</span>
+                    <input
+                      type="checkbox"
+                      checked={showText}
+                      onChange={(event) => setShowText(event.target.checked)}
+                      aria-label="Show Human Readable Text"
+                      className="peer sr-only"
+                    />
+                    <span className="relative h-6 w-11 rounded-full bg-slate-300 transition-colors before:absolute before:left-[2px] before:top-[2px] before:h-5 before:w-5 before:rounded-full before:border before:border-slate-300 before:bg-white before:transition-transform before:content-[''] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand peer-checked:bg-brand peer-checked:before:translate-x-5 peer-checked:before:border-white dark:bg-slate-800" />
+                  </label>
+                </div>
+                <label className="mt-3 flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={applyTextToBatchApi}
+                    onChange={(event) => setApplyTextToBatchApi(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 accent-[#ffdd00]"
+                  />
+                  Apply to Batch &amp; API Modules
+                </label>
+              </div>
+            )}
+
             <div>
               <label className={labelClass}>Module Scale / Resolution: <span className="font-mono text-brand">{scale}</span></label>
               <input
@@ -643,37 +683,24 @@ export default function SingleGenerator() {
               />
             </div>
 
-            <div>
-              <label className={labelClass}>Error Correction Level</label>
-              <select
-                value={errorLevel}
-                onChange={(event) => setErrorLevel(event.target.value)}
-                disabled={!isQr}
-                className={`${inputClass} disabled:opacity-40`}
-              >
-                <option value="L">L - Low (~7% recovery)</option>
-                <option value="M">M - Medium (~15% recovery)</option>
-                <option value="Q">Q - Quartile (~25% recovery)</option>
-                <option value="H">H - High (~30% recovery)</option>
-              </select>
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950 sm:col-span-2">
+            {isQr && (
               <div>
-                <span className="block text-xs font-semibold text-slate-800 dark:text-slate-300">Show Human Readable Text</span>
-                <span className="text-[10px] text-slate-500">Applicable to 1D linear barcodes</span>
+                <label className={labelClass}>Error Correction Level</label>
+                <select
+                  value={errorLevel}
+                  onChange={(event) => setErrorLevel(event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="L">L - Low (~7% recovery)</option>
+                  <option value="M">M - Medium (~15% recovery)</option>
+                  <option value="Q">Q - Quartile (~25% recovery)</option>
+                  <option value="H">H - High (~30% recovery)</option>
+                </select>
               </div>
-              <label className="relative inline-flex cursor-pointer items-center">
-                <input
-                  type="checkbox"
-                  checked={showText}
-                  onChange={(event) => setShowText(event.target.checked)}
-                  aria-label="Show Human Readable Text"
-                  className="peer sr-only"
-                />
-                <span className="relative h-6 w-11 rounded-full bg-slate-300 transition-colors before:absolute before:left-[2px] before:top-[2px] before:h-5 before:w-5 before:rounded-full before:border before:border-slate-300 before:bg-white before:transition-transform before:content-[''] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand peer-checked:bg-brand peer-checked:before:translate-x-5 peer-checked:before:border-white dark:bg-slate-800" />
-              </label>
-            </div>
+            )}
+
+
+
           </div>
 
           {isQr && (
