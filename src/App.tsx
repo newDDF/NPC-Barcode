@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
-import SingleGenerator from './features/single/SingleGenerator';
-import ApiMockBuilder from './features/api/ApiMockBuilder';
-import BatchProcessor from './features/batch/BatchProcessor';
+import { lazy, Suspense, useEffect, useState } from 'react';
+
+const SingleGenerator = lazy(() => import('./features/single/SingleGenerator'));
+const ApiMockBuilder = lazy(() => import('./features/api/ApiMockBuilder'));
+const BatchProcessor = lazy(() => import('./features/batch/BatchProcessor'));
 import { BarcodeConfigProvider } from './features/shared/BarcodeConfigContext';
 import LegalModal, { type LegalDocument } from './components/LegalModal';
 import SeoContent from './components/SeoContent';
@@ -114,11 +115,17 @@ function App() {
 
       <BarcodeConfigProvider>
         <main className="mx-auto w-full max-w-7xl flex-grow px-4 py-8 sm:px-6 lg:px-8">
-          {activeView === 'single' && <SingleGenerator />}
-
-          {activeView === 'batch' && <BatchProcessor />}
-
-          {activeView === 'api' && <ApiMockBuilder />}
+          <Suspense
+            fallback={
+              <div className="flex min-h-[320px] items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-600 border-t-[#ffdd00]" />
+              </div>
+            }
+          >
+            {activeView === 'single' && <SingleGenerator />}
+            {activeView === 'batch' && <BatchProcessor />}
+            {activeView === 'api' && <ApiMockBuilder />}
+          </Suspense>
         </main>
       </BarcodeConfigProvider>
 

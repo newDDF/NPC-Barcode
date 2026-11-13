@@ -1,0 +1,38 @@
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/qr-code-generator/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/barcode-generator/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/batch-barcode-generator/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/barcode-api/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/barcode-types/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/guides/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/favicon.svg
+  Cache-Control: public, max-age=86400
+
+/icons.svg
+  Cache-Control: public, max-age=86400
+
+/robots.txt
+  Cache-Control: public, max-age=3600
+
+/sitemap.xml
+  Cache-Control: public, max-age=3600

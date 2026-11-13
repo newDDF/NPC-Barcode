@@ -1,7 +1,6 @@
 import { normalizeRetailBarcode } from '../shared/checkDigits';
+import type bwipjs from 'bwip-js/browser';
 import { useEffect, useRef, useState } from 'react';
-import bwipjs from 'bwip-js/browser';
-import { ErrorCorrectionLevel, QRCode } from '@rabbit-company/qrcode';
 import { saveAs } from 'file-saver';
 import { useBarcodeConfig } from '../shared/BarcodeConfigContext';
 
@@ -174,10 +173,15 @@ export default function SingleGenerator() {
       return;
     }
 
+    let cancelled = false;
+
+    const render = async () => {
     try {
       const normalizedPayload = normalizeRetailBarcode(barcodeType, payload);
 
       if (isQr) {
+        const { ErrorCorrectionLevel, QRCode } = await import('@rabbit-company/qrcode');
+        if (cancelled) return
         if (canvas) {
           canvas.width = 0;
           canvas.height = 0;
@@ -222,6 +226,9 @@ export default function SingleGenerator() {
       } else {
         if (!canvas) throw new Error('Barcode preview is unavailable.');
 
+        const { default: bwipjs } = await import('bwip-js/browser');
+        if (cancelled) return;
+
         setQrSvg('');
         setQrDataUrl('');
 
@@ -245,6 +252,7 @@ export default function SingleGenerator() {
 
       setError('');
     } catch (renderError) {
+      if (cancelled) return;
       if (canvas) {
         canvas.width = 0;
         canvas.height = 0;
@@ -258,6 +266,13 @@ export default function SingleGenerator() {
           : 'Invalid content for the selected symbology.',
       );
     }
+    };
+
+    void render();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     barcodeType,
     payload,

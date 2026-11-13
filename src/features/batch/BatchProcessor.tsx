@@ -1,9 +1,6 @@
 import { normalizeRetailBarcode } from '../shared/checkDigits';
 import { useRef, useState } from 'react';
-import bwipjs from 'bwip-js/browser';
-import { ErrorCorrectionLevel, QRCode } from '@rabbit-company/qrcode';
-import * as XLSX from 'xlsx';
-import JSZip from 'jszip';
+import type bwipjs from 'bwip-js/browser';
 import { saveAs } from 'file-saver';
 import { useBarcodeConfig } from '../shared/BarcodeConfigContext';
 
@@ -139,6 +136,7 @@ export default function BatchProcessor() {
 
     try {
       const buffer = await file.arrayBuffer();
+      const XLSX = await import('xlsx');
       const workbook = XLSX.read(buffer, { type: 'array' });
       const firstSheetName = workbook.SheetNames[0];
 
@@ -192,15 +190,6 @@ export default function BatchProcessor() {
     setError('');
     setStatus('Preparing barcode archive...');
 
-    const zip = new JSZip();
-    const folder = zip.folder(`NPC_Barcodes_${barcodeType}`);
-
-    if (!folder) {
-      setIsProcessing(false);
-      setError('Could not create the ZIP archive folder.');
-      return;
-    }
-
     const usedNames = new Set<string>();
     let succeeded = 0;
     let failed = 0;
@@ -210,6 +199,21 @@ export default function BatchProcessor() {
     const isQr = barcodeType === 'qrcode';
 
     try {
+      const { default: JSZip } = await import('jszip');
+      const zip = new JSZip();
+      const folder = zip.folder(`NPC_Barcodes_${barcodeType}`);
+
+      if (!folder) {
+        throw new Error('Could not create the ZIP archive folder.');
+      }
+
+      const qrModule = isQr
+        ? await import('@rabbit-company/qrcode')
+        : undefined;
+      const bwipjs = !isQr
+        ? (await import('bwip-js/browser')).default
+        : undefined;
+
       for (let index = 0; index < rows.length; index += 1) {
         const value = displayValue(rows[index]?.[columnIndex]).trim();
 
@@ -221,6 +225,8 @@ export default function BatchProcessor() {
             let blob: Blob;
 
             if (isQr) {
+              if (!qrModule) throw new Error('QR Code engine is unavailable.');
+              const { ErrorCorrectionLevel, QRCode } = qrModule;
               const qr = QRCode.encode(normalizedValue, {
                 errorCorrectionLevel: {
                   L: ErrorCorrectionLevel.LOW,
@@ -254,6 +260,7 @@ export default function BatchProcessor() {
                 'image/png',
               );
             } else {
+              if (!bwipjs) throw new Error('Barcode engine is unavailable.');
               const canvas = document.createElement('canvas');
 
               const options: bwipjs.RenderOptions = {
