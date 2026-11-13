@@ -16,6 +16,10 @@ const inputClass =
   'w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand dark:border-slate-700 dark:bg-slate-950 dark:text-white';
 
 function imageToPngDataUrl(image: HTMLImageElement): string {
+  if (!image.complete || !image.naturalWidth || !image.naturalHeight) {
+    throw new Error('The QR logo is not ready.');
+  }
+
   const canvas = document.createElement('canvas');
   canvas.width = image.naturalWidth;
   canvas.height = image.naturalHeight;
@@ -104,10 +108,16 @@ export default function BatchProcessor() {
     textColor,
     applyTextToBatchApi,
     logoImage,
+    setLogoImage,
     logoSize,
+    setLogoSize,
+    setErrorLevel,
+    setShowText,
+    setApplyTextToBatchApi,
   } = useBarcodeConfig();
 
   const inputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [fileName, setFileName] = useState('');
   const [headers, setHeaders] = useState<string[]>([]);
@@ -121,6 +131,37 @@ export default function BatchProcessor() {
   const [error, setError] = useState('');
   const [generatedCount, setGeneratedCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
+
+  function handleLogoUpload(file?: File) {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onload = () => {
+        if (!image.naturalWidth || !image.naturalHeight) {
+          setError('The selected image is invalid.');
+          return;
+        }
+
+        setLogoImage(image);
+        setError('');
+      };
+
+      image.onerror = () => setError('Unable to load the selected logo.');
+      image.src = String(reader.result);
+    };
+
+    reader.onerror = () => setError('Unable to read the selected logo.');
+    reader.readAsDataURL(file);
+  }
 
   async function loadFile(file?: File) {
     if (!file) return;
@@ -271,6 +312,7 @@ export default function BatchProcessor() {
                 barcolor: foreground.replace('#', ''),
                 backgroundcolor: background.replace('#', ''),
                 textcolor: (textColor ?? foreground).replace('#', ''),
+                textxalign: 'center',
                 includetext: applyTextToBatchApi && showText,
               };
 
@@ -444,6 +486,122 @@ export default function BatchProcessor() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {barcodeType === 'qrcode' && (
+              <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+                <div>
+                  <label className={labelClass} htmlFor="batch-error-level">
+                    QR Error Correction Level
+                  </label>
+                  <select
+                    id="batch-error-level"
+                    className={inputClass}
+                    value={errorLevel}
+                    disabled={isProcessing}
+                    onChange={(event) => setErrorLevel(event.target.value)}
+                  >
+                    <option value="L">L — Low (7%)</option>
+                    <option value="M">M — Medium (15%)</option>
+                    <option value="Q">Q — Quartile (25%)</option>
+                    <option value="H">H — High (30%)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={labelClass}>QR Center Logo</label>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(event) => handleLogoUpload(event.target.files?.[0])}
+                  />
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={isProcessing}
+                      onClick={() => logoInputRef.current?.click()}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-brand dark:border-slate-700 dark:text-slate-200"
+                    >
+                      {logoImage ? 'Change Logo' : 'Upload Logo'}
+                    </button>
+
+                    {logoImage && (
+                      <>
+                        <img
+                          src={logoImage.src}
+                          alt="QR center logo preview"
+                          className="h-10 w-10 rounded-md border border-slate-200 bg-white object-contain p-1 dark:border-slate-700"
+                        />
+                        <button
+                          type="button"
+                          disabled={isProcessing}
+                          onClick={() => {
+                            setLogoImage(null);
+                            if (logoInputRef.current) logoInputRef.current.value = '';
+                          }}
+                          className="text-xs font-semibold text-red-600 hover:text-red-700"
+                        >
+                          Remove Logo
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {logoImage && (
+                    <div className="mt-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className={labelClass} htmlFor="batch-logo-size">
+                          Logo Scale
+                        </label>
+                        <span className="font-mono text-xs text-slate-500">
+                          {logoSize}%
+                        </span>
+                      </div>
+                      <input
+                        id="batch-logo-size"
+                        type="range"
+                        min="10"
+                        max="20"
+                        step="1"
+                        value={logoSize}
+                        disabled={isProcessing}
+                        onChange={(event) => setLogoSize(Number(event.target.value))}
+                        className="w-full accent-brand"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50">
+              <label className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={showText}
+                  disabled={isProcessing}
+                  onChange={(event) => setShowText(event.target.checked)}
+                  className="h-4 w-4 accent-brand"
+                />
+                Show Human-Readable Text
+              </label>
+
+              <label className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  checked={applyTextToBatchApi}
+                  disabled={isProcessing}
+                  onChange={(event) => setApplyTextToBatchApi(event.target.checked)}
+                  className="h-4 w-4 accent-brand"
+                />
+                Apply Text to Batch &amp; API Modules
+              </label>
+              <p className="text-xs text-slate-500">
+                Text is generated only when both options are enabled.
+              </p>
             </div>
 
             <div>

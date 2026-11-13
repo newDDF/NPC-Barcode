@@ -1,3 +1,4 @@
+import ToastViewport from './components/ToastViewport';
 import { lazy, Suspense, useEffect, useState } from 'react';
 
 const SingleGenerator = lazy(() => import('./features/single/SingleGenerator'));
@@ -63,7 +64,7 @@ function App() {
                   </g>
                 </svg>
               </div>
-              <span className="brand-wordmark hidden whitespace-nowrap text-xl font-bold tracking-tight sm:inline">
+              <span className="brand-wordmark inline whitespace-nowrap text-sm font-bold tracking-tight sm:text-xl">
                 NPC-Barcode
               </span>
             </a>
@@ -153,6 +154,8 @@ function App() {
           </nav>
         </div>
       </footer>
+      <ToastViewport />
+
       {legalDocument && (
         <LegalModal document={legalDocument} onClose={() => setLegalDocument(null)} />
       )}

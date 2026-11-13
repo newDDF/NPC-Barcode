@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useBarcodeConfig } from '../shared/BarcodeConfigContext';
+import { showToast } from '../shared/notifications';
 
-const BASE_URL = 'https://api.npc-barcode.com/v1/generate';
+const BASE_URL =
+  typeof window === 'undefined'
+    ? 'https://barcode.x0u0x.xyz/api/generate'
+    : `${window.location.origin}/api/generate`;
 
 const inputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-700 outline-none transition-all duration-150 focus:border-brand focus:bg-white focus:font-semibold focus:text-slate-950 focus:ring-2 focus:ring-brand/25 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:focus:bg-slate-950 dark:focus:text-white';
@@ -50,10 +54,10 @@ export default function ApiMockBuilder() {
     showText,
     textColor,
     applyTextToBatchApi,
+    padding,
   } = useBarcodeConfig();
 
   const [apiPayload, setApiPayload] = useState(payload);
-  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     setApiPayload(payload);
@@ -64,6 +68,7 @@ export default function ApiMockBuilder() {
     data: apiPayload,
     scale: String(scale),
     height: String(height),
+    padding: String(padding),
     fg: foreground,
     bg: background,
     ec: errorLevel,
@@ -77,12 +82,11 @@ export default function ApiMockBuilder() {
   async function handleCopy(value: string, label: string) {
     try {
       await copyText(value);
-      setNotice(`${label} copied to clipboard.`);
+      showToast(`${label} copied to clipboard.`, 'success');
     } catch {
-      setNotice(`Could not copy ${label.toLowerCase()}.`);
+      showToast(`Could not copy ${label.toLowerCase()}.`, 'error');
     }
 
-    window.setTimeout(() => setNotice(''), 2800);
   }
 
   return (
@@ -232,6 +236,28 @@ export default function ApiMockBuilder() {
                 onFocus={(event) => event.currentTarget.select()}
               />
 
+              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Live API Preview
+                </p>
+                <div className="flex min-h-40 items-center justify-center overflow-hidden rounded-lg bg-slate-50 p-4 dark:bg-slate-900">
+                  <img
+                    key={endpoint}
+                    src={endpoint}
+                    alt="Generated barcode API preview"
+                    className="max-h-64 max-w-full object-contain"
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                    onLoad={(event) => {
+                      event.currentTarget.style.display = 'block';
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  The preview becomes available after the Cloudflare Pages Function is deployed.
+                </p>
+              </div>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/50">
@@ -260,11 +286,6 @@ export default function ApiMockBuilder() {
 
             </div>
 
-            {notice && (
-              <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300" role="status">
-                {notice}
-              </p>
-            )}
           </div>
         </div>
       </div>

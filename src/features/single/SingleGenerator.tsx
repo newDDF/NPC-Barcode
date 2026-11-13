@@ -3,6 +3,7 @@ import type bwipjs from 'bwip-js/browser';
 import { useEffect, useRef, useState } from 'react';
 import { saveAs } from 'file-saver';
 import { useBarcodeConfig } from '../shared/BarcodeConfigContext';
+import { showToast } from '../shared/notifications';
 
 type Symbology = {
   id: string;
@@ -150,7 +151,6 @@ export default function SingleGenerator() {
   const [selectedPreset, setSelectedPreset] = useState('');
   const [dimensions, setDimensions] = useState('0 × 0 px');
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
   const [qrSvg, setQrSvg] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState('');
 
@@ -290,9 +290,8 @@ export default function SingleGenerator() {
     isSquare,
   ]);
 
-  function notify(message: string) {
-    setNotice(message);
-    window.setTimeout(() => setNotice(''), 2800);
+  function notify(message: string, tone: 'success' | 'error' = 'success') {
+    showToast(message, tone);
   }
 
   function selectSymbology(type: string) {
@@ -399,7 +398,7 @@ export default function SingleGenerator() {
     }
 
     if (!navigator.clipboard || !window.ClipboardItem) {
-      notify('Image clipboard is not supported in this browser.');
+      notify('Image clipboard is not supported in this browser.', 'error');
       return;
     }
 
@@ -419,7 +418,7 @@ export default function SingleGenerator() {
 
       notify('Image copied to clipboard.');
     } catch {
-      notify('Unable to copy image. Check browser permissions.');
+      notify('Unable to copy image. Check browser permissions.', 'error');
     }
   }
 
@@ -813,11 +812,6 @@ export default function SingleGenerator() {
         </section>
       </aside>
 
-      {notice && (
-        <div className="fixed bottom-5 right-5 z-50 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-xs font-medium text-white shadow-2xl">
-          <span className="mr-2 text-brand">●</span>{notice}
-        </div>
-      )}
     </div>
   );
 }

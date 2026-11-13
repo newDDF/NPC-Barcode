@@ -283,42 +283,76 @@ export default function SeoContent() {
   }, []);
 
   return (
-    <section className="mx-auto mt-12 w-full max-w-5xl border-t border-slate-200 pt-10 dark:border-slate-800" aria-labelledby="seo-page-heading">
-      <header className="mb-8">
-        <h1 id="seo-page-heading" className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+    <section
+      className="mx-auto mt-10 w-full max-w-7xl border-t border-slate-200 px-4 pt-8 transition-colors sm:px-6 dark:border-slate-800"
+      aria-labelledby="seo-page-heading"
+    >
+      <header className="mb-6">
+        <h1
+          id="seo-page-heading"
+          className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white"
+        >
           {page.heading}
         </h1>
-        <p className="mt-4 max-w-3xl text-base leading-8 text-slate-600 dark:text-slate-300">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
           {page.intro}
         </p>
       </header>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-3">
         {page.sections.map(([title, body]) => (
-          <article key={title} className="rounded-2xl border border-slate-200 bg-white/70 p-5 dark:border-slate-800 dark:bg-slate-900/50">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{title}</h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{body}</p>
+          <article
+            key={title}
+            className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-xl transition-colors dark:border-slate-800 dark:bg-slate-900/90"
+          >
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+              {title}
+            </h2>
+            <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
+              {body}
+            </p>
           </article>
         ))}
       </div>
 
-      <section className="mt-10" aria-labelledby="seo-faq-heading">
-        <h2 id="seo-faq-heading" className="text-2xl font-bold text-slate-900 dark:text-white">Frequently Asked Questions</h2>
-        <div className="mt-5 divide-y divide-slate-200 dark:divide-slate-800">
+      <section className="mt-9" aria-labelledby="seo-faq-heading">
+        <h2
+          id="seo-faq-heading"
+          className="text-xl font-bold tracking-tight text-slate-900 dark:text-white"
+        >
+          Frequently Asked Questions
+        </h2>
+        <div className="mt-4 divide-y divide-slate-200 dark:divide-slate-800">
           {page.faqs.map(([question, answer]) => (
             <details key={question} className="py-4">
-              <summary className="cursor-pointer font-semibold text-slate-900 dark:text-white">{question}</summary>
-              <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{answer}</p>
+              <summary className="cursor-pointer text-sm font-semibold text-slate-900 dark:text-white">
+                {question}
+              </summary>
+              <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                {answer}
+              </p>
             </details>
           ))}
         </div>
       </section>
 
-      <nav className="mt-10 border-t border-slate-200 pt-6 dark:border-slate-800" aria-label="Explore barcode tools and guides">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Explore NPC Barcode</h2>
-        <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-sm">
+      <nav
+        className="mt-8 border-t border-slate-200 pt-6 dark:border-slate-800"
+        aria-label="Explore barcode tools and guides"
+      >
+        <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+          Explore NPC Barcode
+        </h2>
+        <ul className="mt-3 flex flex-wrap gap-x-6 gap-y-3 text-sm">
           {links.map(([href, label]) => (
-            <li key={href}><a className="text-slate-600 underline decoration-[#ffdd00] underline-offset-4 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white" href={href}>{label}</a></li>
+            <li key={href}>
+              <a
+                className="text-slate-600 underline decoration-[#ffdd00] underline-offset-4 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                href={href}
+              >
+                {label}
+              </a>
+            </li>
           ))}
         </ul>
       </nav>
